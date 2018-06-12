@@ -1,2 +1,4 @@
 *.pyc
-runs
+runs/
+.idea/
+log/
