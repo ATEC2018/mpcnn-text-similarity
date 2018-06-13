@@ -20,6 +20,8 @@
 
 ### 模型训练
         # python train.py
+# 论文参考
+[《Multi-Perspective Sentence Similarity Modeling with Convolutional Neural Network》](http://www.emnlp2015.org/proceedings/EMNLP/pdf/EMNLP181.pdf)
 
 # 代码参考
 
