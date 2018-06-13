@@ -14,6 +14,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import logging
 
+from input_helpers import InputHelper
+
 # 创建一个logger
 logger = logging.getLogger('mylogger')
 logger.setLevel(logging.DEBUG)
@@ -37,7 +39,8 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 # tf.app.flags.DEFINE_integer('embedding_dim', 100, 'The dimension of the word embedding')
-EMBEDDING_DIM=100
+# EMBEDDING_DIM=100
+EMBEDDING_DIM=64
 # tf.app.flags.DEFINE_integer('num_filters_A', 50, 'The number of filters in block A')
 NUM_FILTERS_A=50
 # tf.app.flags.DEFINE_integer('num_filters_B', 50, 'The number of filters in block B')
@@ -45,9 +48,14 @@ NUM_FILTER_B=50
 # tf.app.flags.DEFINE_integer('n_hidden', 150, 'number of hidden units in the fully connected layer')
 N_HIDDEN=150
 # tf.app.flags.DEFINE_integer('sentence_length', 100, 'max size of sentence')
-SENTENCE_LENGTH=100
+# SENTENCE_LENGTH=100
+# SENTENCE_LENGTH=8
+SENTENCE_LENGTH=20
+# 语句最多长度(包含多少个词)
+# MAX_DOCUMENT_LENGTH = 8
 # tf.app.flags.DEFINE_integer('num_classes', 6, 'num of the labels')
-NUM_CLASSES=6
+# NUM_CLASSES=6
+NUM_CLASSES=2
 # tf.flags.DEFINE_float("l2_reg_lambda", 1, "L2 regularization lambda (default: 0.0)")
 L2_REG_LAMBDA=1
 
@@ -73,19 +81,85 @@ ALLOW_SOFT_PLACEMENT=True
 # tf.app.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
 LOG_DEVICE_PLACEMENT=False
 
-filter_size = [1, 2, 100]
-# conf = tf.app.flags.FLAGS
-# conf._parse_flags()
+# 原始训练文件
+TRAINING_FILES_RAW = './train_data/atec_nlp_sim_train.csv'
+# 验证集比例
+DEV_PERCENT = 10
+
+# word2vec模型（采用已训练好的中文模型）
+WORD2VEC_MODEL = '../word2vecmodel/news_12g_baidubaike_20g_novel_90g_embedding_64.bin'
+# 　模型格式为bin
+WORD2VEC_FORMAT = 'bin'
+
+# filter_size = [1, 2, 64]
+filter_size = [1, 2, SENTENCE_LENGTH]
 
 #glove是载入的次向量。glove.d是单词索引字典<word, index>，glove.g是词向量矩阵<词个数,300>
-print('loading glove...')
-glove = emb.GloVe(N=100)
-
+# print('loading glove...')
+# glove = emb.GloVe(N=100)
 # print("Loading data...")
-Xtrain, ytrain = load_set(glove, path='./sts/semeval-sts/all')
+# Xtrain, ytrain = load_set(glove, path='./sts/semeval-sts/all')
+#
+# for item in Xtrain:
+#     print (item)
+# print ('---old----')
+# print (type(Xtrain))
+# print (len(Xtrain))
+# print (type(Xtrain[0]))
+# print (len(Xtrain[0]))
+# print (Xtrain[0].shape)
+# print (Xtrain[0].dtype)
+#
+# exit(0)
+
+# for item in ytrain:
+#     print (item)
+# print (type(ytrain))
+# print (len(ytrain))
+# print (ytrain.shape)
+# exit(0)
+
+inpH = InputHelper()
+train_set, dev_set, vocab_processor, sum_no_of_batches = inpH.getDataSets(TRAINING_FILES_RAW, SENTENCE_LENGTH,
+                                                                          DEV_PERCENT,
+                                                                          BATCH_SIZE)
+
+
+Xtrain=[train_set[0], train_set[1]]
+
+# for item in Xtrain:
+#     print (item)
+#
+#
+# print (type(Xtrain))
+# print (len(Xtrain))
+# print (type(Xtrain[0]))
+# print (len(Xtrain[0]))
+# print (Xtrain[0].shape)
+# print (Xtrain[0].dtype)
+# exit(0)
+
+ytrain=train_set[2]
+
+# for item in ytrain:
+#     print (item)
+# print (type(ytrain))
+# print (len(ytrain))
+# print (ytrain.shape)
+# exit(0)
+
 Xtrain[0], Xtrain[1], ytrain = shuffle(Xtrain[0], Xtrain[1], ytrain)
+
+# print ('======after shuffle======')
+# print (type(Xtrain[0]))
+# print (Xtrain[0].shape)
+# print (Xtrain[0].dtype)
+# exit(0)
+
 #[22592, 句长]
-Xtest, ytest = load_set(glove, path='./sts/semeval-sts/2016')
+# Xtest, ytest = load_set(glove, path='./sts/semeval-sts/2016')
+Xtest=[dev_set[0], dev_set[1]]
+ytest=dev_set[2]
 Xtest[0], Xtest[1], ytest = shuffle(Xtest[0], Xtest[1], ytest)
 #[1186, 句长]
 
@@ -103,9 +177,50 @@ with tf.Session() as sess:
     input_2 = tf.placeholder(tf.int32, [None, SENTENCE_LENGTH], name="input_x2")
     input_3 = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="input_y")
     dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prob")
+
+    # 加载word2vec
+    inpH.loadW2V(WORD2VEC_MODEL, WORD2VEC_FORMAT)
+    # initial matrix with random uniform
+    initW = np.random.uniform(0, 0, (len(vocab_processor.vocabulary_), EMBEDDING_DIM)).astype(np.float32)
+    # print (initW)
+    # print (type(initW))
+    # exit(0)
+
+    # print(initW)
+    # sys.exit(0)
+
+    # load any vectors from the word2vec
+    print("initializing initW with pre-trained word2vec embeddings")
+    for index, w in enumerate(vocab_processor.vocabulary_._mapping):
+        # print('vocab-{}:{}'.format(index, w))
+
+        arr = []
+        if w in inpH.pre_emb:
+            arr = inpH.pre_emb[w]
+            # print('=====arr-{},{}'.format(index, arr))
+            idx = vocab_processor.vocabulary_.get(w)
+            initW[idx] = np.asarray(arr).astype(np.float32)
+
+            # 不使用词向量
+            # arr=[]
+            # idx = vocab_processor.vocabulary_.get(w)
+            # arr.append(idx)
+            # initW[idx] = np.asarray(arr).astype(np.float32)
+
+    print("Done assigning intiW. len=" + str(len(initW)))
+    # sys.exit(0)
+
+    # for idx, value in enumerate(initW):
+    #     print(idx, value)
+    # sys.exit(0)
+
+    # sess.run(siameseModel.W.assign(initW))
+
     with tf.name_scope("embendding"):
-        s0_embed = tf.nn.embedding_lookup(glove.g, input_1)
-        s1_embed = tf.nn.embedding_lookup(glove.g, input_2)
+        # s0_embed = tf.nn.embedding_lookup(glove.g, input_1)
+        # s1_embed = tf.nn.embedding_lookup(glove.g, input_2)
+        s0_embed = tf.nn.embedding_lookup(initW, input_1)
+        s1_embed = tf.nn.embedding_lookup(initW, input_2)
 
     with tf.name_scope("reshape"):
         input_x1 = tf.reshape(s0_embed, [-1, SENTENCE_LENGTH, EMBEDDING_DIM, 1])
@@ -200,6 +315,13 @@ with tf.Session() as sess:
     batches = batch_iter(list(zip(Xtrain[0], Xtrain[1], ytrain)), BATCH_SIZE, NUM_EPOCHS)
     for batch in batches:
         x1_batch, x2_batch, y_batch = zip(*batch)
+
+        # print (x1_batch)
+        # print (type(x1_batch))
+        # print (x1_batch.shape)
+        # print (x1_batch.dtype)
+        # exit(0)
+
         train(x1_batch, x2_batch, y_batch)
         current_step = tf.train.global_step(sess, global_step)
         if current_step % EVALUATE_EVERY == 0:

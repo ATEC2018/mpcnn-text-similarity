@@ -1,3 +1,4 @@
+#coding=utf8
 import tensorflow as tf
 from utils import *
 import tensorflow.contrib.slim as slim
@@ -100,6 +101,10 @@ class MPCNN_Layer():
                 pools = []
                 for i, ws in enumerate(self.filter_sizes):
                     with tf.name_scope("conv-pool-%s" %ws):
+                        # print ('==========x==========')
+                        # print (x)
+                        # exit(0)
+
                         conv = tf.nn.conv2d(x, self.W1[i], strides=[1, 1, 1, 1], padding="VALID")
                         conv = slim.batch_norm(inputs=conv, activation_fn=tf.nn.tanh, is_training=self.is_training)
                         pool = pooling(conv, axis=1)

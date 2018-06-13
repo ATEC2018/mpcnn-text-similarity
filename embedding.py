@@ -1,3 +1,4 @@
+#coding=utf8
 """
 A toolkit you may find useful for mapping sentences to embeddings.
 

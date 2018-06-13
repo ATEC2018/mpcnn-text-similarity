@@ -68,7 +68,12 @@ class InputHelper(object):
             if len(l) >= 4:
                 x1.append(l[1])
                 x2.append(l[2])
-                y.append(int(l[3]))
+                # y.append(int(l[3]))
+                flag = int(l[3])
+                lable = [0] * 2
+                if flag > 0:
+                    lable[1] = 1
+                y.append(np.array(lable, dtype='float32'))
 
         # print(x1)
         # print(x2)

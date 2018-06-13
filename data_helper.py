@@ -1,3 +1,4 @@
+#coding=utf8
 import codecs
 from nltk.tokenize import word_tokenize
 import numpy as np
