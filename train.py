@@ -1,4 +1,4 @@
-#coding=utf8
+# coding=utf8
 from data_helper import load_set, batch_iter
 import embedding as emb
 from model import *
@@ -10,6 +10,7 @@ import tensorflow as tf
 import numpy as np
 from sklearn.utils import shuffle
 import os
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import logging
@@ -22,7 +23,7 @@ logger.setLevel(logging.DEBUG)
 
 # 创建一个handler，用于写入日志文件
 timestamp = str(int(time.time()))
-fh = logging.FileHandler('./log/log_' + timestamp +'.txt')
+fh = logging.FileHandler('./log/log_' + timestamp + '.txt')
 fh.setLevel(logging.DEBUG)
 
 # 再创建一个handler，用于输出到控制台
@@ -40,61 +41,65 @@ logger.addHandler(ch)
 
 # tf.app.flags.DEFINE_integer('embedding_dim', 100, 'The dimension of the word embedding')
 # EMBEDDING_DIM=100
-EMBEDDING_DIM=64
+EMBEDDING_DIM = 128
 # tf.app.flags.DEFINE_integer('num_filters_A', 50, 'The number of filters in block A')
-NUM_FILTERS_A=50
+NUM_FILTERS_A = 50
 # tf.app.flags.DEFINE_integer('num_filters_B', 50, 'The number of filters in block B')
-NUM_FILTER_B=50
+NUM_FILTER_B = 50
 # tf.app.flags.DEFINE_integer('n_hidden', 150, 'number of hidden units in the fully connected layer')
-N_HIDDEN=150
+N_HIDDEN = 150
 # tf.app.flags.DEFINE_integer('sentence_length', 100, 'max size of sentence')
 # SENTENCE_LENGTH=100
 # SENTENCE_LENGTH=8
-SENTENCE_LENGTH=30
+SENTENCE_LENGTH = 40
 # 语句最多长度(包含多少个词)
 # MAX_DOCUMENT_LENGTH = 8
 # tf.app.flags.DEFINE_integer('num_classes', 6, 'num of the labels')
 # NUM_CLASSES=6
-NUM_CLASSES=2
+NUM_CLASSES = 2
 # tf.flags.DEFINE_float("l2_reg_lambda", 1, "L2 regularization lambda (default: 0.0)")
-L2_REG_LAMBDA=1
+L2_REG_LAMBDA = 1
 
 # tf.app.flags.DEFINE_integer('num_epochs', 85, 'Number of epochs to be trained')
-NUM_EPOCHS=8500
+NUM_EPOCHS = 8500
 # tf.app.flags.DEFINE_integer('batch_size', 64, 'size of mini batch')
-BATCH_SIZE=64
+BATCH_SIZE = 64
 
 # tf.app.flags.DEFINE_integer("display_step", 100, "Evaluate model on dev set after this many steps (default: 100)")
-DISPLAY_STEP=100
+DISPLAY_STEP = 100
 # tf.app.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
-EVALUATE_EVERY=100
+EVALUATE_EVERY = 100
 # tf.app.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
-CHECKPOINT_EVERY=100
+CHECKPOINT_EVERY = 100
 # tf.app.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
-NUM_CHECKPOINTS=5
+NUM_CHECKPOINTS = 5
 
 # tf.app.flags.DEFINE_float('lr', 1e-3, 'learning rate')
-LR=1e-3
+LR = 1e-3
 
 # tf.app.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
-ALLOW_SOFT_PLACEMENT=True
+ALLOW_SOFT_PLACEMENT = True
 # tf.app.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
-LOG_DEVICE_PLACEMENT=False
+LOG_DEVICE_PLACEMENT = False
 
 # 原始训练文件
 TRAINING_FILES_RAW = './train_data/atec_nlp_sim_train.csv'
 # 验证集比例
 DEV_PERCENT = 1
 
+# 自己训练的word2vec模型
+WORD2VEC_MODEL_SELF = './word2vec_model.bin'
+
 # word2vec模型（采用已训练好的中文模型）
-WORD2VEC_MODEL = '../word2vecmodel/news_12g_baidubaike_20g_novel_90g_embedding_64.bin'
+# WORD2VEC_MODEL = '../word2vecmodel/news_12g_baidubaike_20g_novel_90g_embedding_64.bin'
+WORD2VEC_MODEL = WORD2VEC_MODEL_SELF
 # 　模型格式为bin
 WORD2VEC_FORMAT = 'bin'
 
 # filter_size = [1, 2, 64]
 filter_size = [1, 2, SENTENCE_LENGTH]
 
-#glove是载入的次向量。glove.d是单词索引字典<word, index>，glove.g是词向量矩阵<词个数,300>
+# glove是载入的次向量。glove.d是单词索引字典<word, index>，glove.g是词向量矩阵<词个数,300>
 # print('loading glove...')
 # glove = emb.GloVe(N=100)
 # print("Loading data...")
@@ -120,6 +125,10 @@ filter_size = [1, 2, SENTENCE_LENGTH]
 # exit(0)
 
 inpH = InputHelper()
+# 训练自己的word2vec模型
+# inpH.gen_word2vec(TRAINING_FILES_RAW, WORD2VEC_MODEL_SELF, EMBEDDING_DIM)
+# exit(0)
+
 train_set, dev_set, vocab_processor, sum_no_of_batches = inpH.getDataSets(TRAINING_FILES_RAW, SENTENCE_LENGTH,
                                                                           DEV_PERCENT,
                                                                           BATCH_SIZE)
@@ -148,7 +157,7 @@ train_set, dev_set, vocab_processor, sum_no_of_batches = inpH.getDataSets(TRAINI
 # exit(0)
 
 
-Xtrain=[train_set[0], train_set[1]]
+Xtrain = [train_set[0], train_set[1]]
 
 # for item in Xtrain:
 #     print (item)
@@ -162,7 +171,7 @@ Xtrain=[train_set[0], train_set[1]]
 # print (Xtrain[0].dtype)
 # exit(0)
 
-ytrain=train_set[2]
+ytrain = train_set[2]
 
 # for item in ytrain:
 #     print (item)
@@ -179,20 +188,19 @@ Xtrain[0], Xtrain[1], ytrain = shuffle(Xtrain[0], Xtrain[1], ytrain)
 # print (Xtrain[0].dtype)
 # exit(0)
 
-#[22592, 句长]
+# [22592, 句长]
 # Xtest, ytest = load_set(glove, path='./sts/semeval-sts/2016')
-Xtest=[dev_set[0], dev_set[1]]
-ytest=dev_set[2]
+Xtest = [dev_set[0], dev_set[1]]
+ytest = dev_set[2]
 Xtest[0], Xtest[1], ytest = shuffle(Xtest[0], Xtest[1], ytest)
-#[1186, 句长]
-
+# [1186, 句长]
 
 
 # max_sent_length = max([len(x) for SS in Xtrain for x in SS])
 # print max_sent_length #最大的句子长度为84
-#-------------------------------------Loading finished----------------------------------------------#
+# -------------------------------------Loading finished----------------------------------------------#
 
-#-------------------------------------training the network----------------------------------------------#
+# -------------------------------------training the network----------------------------------------------#
 with tf.Session() as sess:
     # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
     # sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
@@ -293,6 +301,8 @@ with tf.Session() as sess:
     dev_summary_op = tf.summary.merge([loss_summary, acc_summary])
     dev_summary_dir = os.path.join(out_dir, "summaries", "dev")
     dev_summary_writer = tf.summary.FileWriter(dev_summary_dir, sess.graph)
+
+
     #
     # checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
     # checkpoint_prefix = os.path.join(checkpoint_dir, "model")
@@ -321,10 +331,10 @@ with tf.Session() as sess:
         # exit(0)
 
         feed_dict = {
-          input_1: x1_batch,
-          input_2: x2_batch,
-          input_3: y_batch,
-          dropout_keep_prob: 0.5
+            input_1: x1_batch,
+            input_2: x2_batch,
+            input_3: y_batch,
+            dropout_keep_prob: 0.5
         }
         _, step, summaries, batch_loss, accuracy = sess.run(
             [train_step, global_step, train_summary_op, setence_model.loss, setence_model.accuracy],
@@ -333,15 +343,16 @@ with tf.Session() as sess:
         logger.info("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, batch_loss, accuracy))
         train_summary_writer.add_summary(summaries, step)
 
+
     def dev_step(x1_batch, x2_batch, y_batch, writer=None):
         """
         Evaluates model on a dev set
         """
         feed_dict = {
-          input_1: x1_batch,
-          input_2: x2_batch,
-          input_3: y_batch,
-          dropout_keep_prob: 1
+            input_1: x1_batch,
+            input_2: x2_batch,
+            input_3: y_batch,
+            dropout_keep_prob: 1
         }
         _, step, summaries, batch_loss, accuracy = sess.run(
             [train_step, global_step, dev_summary_op, setence_model.loss, setence_model.accuracy],
@@ -352,6 +363,7 @@ with tf.Session() as sess:
         #     writer.add_summary(summaries, step)
 
         return batch_loss, accuracy
+
 
     sess.run(tf.global_variables_initializer())
     batches = batch_iter(list(zip(Xtrain[0], Xtrain[1], ytrain)), BATCH_SIZE, NUM_EPOCHS)
@@ -373,10 +385,10 @@ with tf.Session() as sess:
                 total_dev_accuracy += dev_accuracy
             total_dev_accuracy = total_dev_accuracy / (len(ytest) / BATCH_SIZE)
             logger.info("dev_loss {:g}, dev_acc {:g}, num_dev_batches {:g}".format(total_dev_loss, total_dev_accuracy,
-                                                                             len(ytest) / BATCH_SIZE))
+                                                                                   len(ytest) / BATCH_SIZE))
             # train_summary_writer.add_summary(summaries)
 
-    #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+    # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
     # for i in range(conf.num_epochs):
     #     training_batch = zip(range(0, len(Xtrain[0]), conf.batch_size),
     #                          range(conf.batch_size, len(Xtrain[0]) + 1, conf.batch_size))

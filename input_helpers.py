@@ -9,6 +9,7 @@ import gc
 from tensorflow.contrib import learn
 # from gensim.models.word2vec import Word2Vec
 import gensim
+from gensim.models import word2vec
 import gzip
 from random import random
 from preprocess import MyVocabularyProcessor
@@ -189,3 +190,30 @@ class InputHelper(object):
         del vocab_processor
         gc.collect()
         return x1, x2, y
+
+    def gen_word2vec(self, train_file_path, model_file_path, embbeding_size):
+        sentences = []
+
+        for line in open(train_file_path):
+            # print(line)
+            l = line.strip().split("\t")
+
+            if len(l) >= 4:
+                sentences.append(l[1])
+                sentences.append(l[2])
+
+        corpus_file = './train_data/train_corpus.txt'
+        fw = open(corpus_file, 'w')
+        jieba.load_userdict('./dict.txt')
+        for s in sentences:
+            s = s.decode("utf8")
+            s = re.sub("[\s+\.\!\/_,$%^*(+\"\']+|[+——！，。：？?、~@#￥%……&*（）]+".decode("utf8"), "".decode("utf8"), s)
+
+            participle = list(jieba.lcut(s))
+
+            fw.write('{}\n'.format(' '.join(participle)))
+        fw.close()
+
+        sentences = word2vec.Text8Corpus(corpus_file)
+        model = word2vec.Word2Vec(sentences, size=embbeding_size, min_count=1)
+        model.wv.save_word2vec_format(model_file_path, binary=True)
