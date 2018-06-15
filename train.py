@@ -50,7 +50,7 @@ N_HIDDEN=150
 # tf.app.flags.DEFINE_integer('sentence_length', 100, 'max size of sentence')
 # SENTENCE_LENGTH=100
 # SENTENCE_LENGTH=8
-SENTENCE_LENGTH=20
+SENTENCE_LENGTH=30
 # 语句最多长度(包含多少个词)
 # MAX_DOCUMENT_LENGTH = 8
 # tf.app.flags.DEFINE_integer('num_classes', 6, 'num of the labels')
@@ -60,7 +60,7 @@ NUM_CLASSES=2
 L2_REG_LAMBDA=1
 
 # tf.app.flags.DEFINE_integer('num_epochs', 85, 'Number of epochs to be trained')
-NUM_EPOCHS=85
+NUM_EPOCHS=8500
 # tf.app.flags.DEFINE_integer('batch_size', 64, 'size of mini batch')
 BATCH_SIZE=64
 
@@ -84,7 +84,7 @@ LOG_DEVICE_PLACEMENT=False
 # 原始训练文件
 TRAINING_FILES_RAW = './train_data/atec_nlp_sim_train.csv'
 # 验证集比例
-DEV_PERCENT = 10
+DEV_PERCENT = 1
 
 # word2vec模型（采用已训练好的中文模型）
 WORD2VEC_MODEL = '../word2vecmodel/news_12g_baidubaike_20g_novel_90g_embedding_64.bin'
@@ -123,6 +123,29 @@ inpH = InputHelper()
 train_set, dev_set, vocab_processor, sum_no_of_batches = inpH.getDataSets(TRAINING_FILES_RAW, SENTENCE_LENGTH,
                                                                           DEV_PERCENT,
                                                                           BATCH_SIZE)
+
+# print(type(vocab_processor.vocabulary_._mapping))
+# for index, k in enumerate(vocab_processor.vocabulary_._mapping):
+#     print('vocab-{}, {}:{}'.format(index, k,vocab_processor.vocabulary_._mapping[k]))
+#     print('======:{}'.format(vocab_processor.vocabulary_.reverse(vocab_processor.vocabulary_._mapping[k])))
+
+# origin_sentence='为啥我花呗叫话费都交不了'
+# print(origin_sentence)
+# sentence_list=list(vocab_processor.transform(np.asarray([origin_sentence])))
+#
+# print(sentence_list)
+# sentence=[]
+# for idx in sentence_list[0]:
+#     word=vocab_processor.vocabulary_.reverse(idx)
+#     sentence.append(word)
+#     print(word)
+#     for k, v in vocab_processor.vocabulary_._mapping.items():
+#         if word==k:
+#             print(k, v)
+# print ('/'.join(sentence))
+#
+#
+# exit(0)
 
 
 Xtrain=[train_set[0], train_set[1]]
@@ -181,7 +204,7 @@ with tf.Session() as sess:
     # 加载word2vec
     inpH.loadW2V(WORD2VEC_MODEL, WORD2VEC_FORMAT)
     # initial matrix with random uniform
-    initW = np.random.uniform(0, 0, (len(vocab_processor.vocabulary_), EMBEDDING_DIM)).astype(np.float32)
+    initW = np.random.uniform(-0.25, 0.25, (len(vocab_processor.vocabulary_), EMBEDDING_DIM)).astype(np.float32)
     # print (initW)
     # print (type(initW))
     # exit(0)
@@ -200,6 +223,9 @@ with tf.Session() as sess:
             # print('=====arr-{},{}'.format(index, arr))
             idx = vocab_processor.vocabulary_.get(w)
             initW[idx] = np.asarray(arr).astype(np.float32)
+        else:
+            pass
+            # print ('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
 
             # 不使用词向量
             # arr=[]
@@ -208,7 +234,7 @@ with tf.Session() as sess:
             # initW[idx] = np.asarray(arr).astype(np.float32)
 
     print("Done assigning intiW. len=" + str(len(initW)))
-    # sys.exit(0)
+    # exit(0)
 
     # for idx, value in enumerate(initW):
     #     print(idx, value)
@@ -278,6 +304,22 @@ with tf.Session() as sess:
         """
         A single training step
         """
+        # for index, sentence in enumerate(x1_batch):
+        #     word_list1=[]
+        #     word_list2=[]
+        #     y=y_batch[index]
+        #     for idx in x1_batch[index]:
+        #         word_list1.append(vocab_processor.vocabulary_.reverse(idx))
+        #     for idx in x2_batch[index]:
+        #         word_list2.append(vocab_processor.vocabulary_.reverse(idx))
+        #
+        #     # print(''.join(word_list1),'\t',''.join(word_list2),'\t',y)
+        #     print('==========={}=============='.format(index))
+        #     print('/'.join(word_list1))
+        #     print ('/'.join(word_list2))
+        #     print(y)
+        # exit(0)
+
         feed_dict = {
           input_1: x1_batch,
           input_2: x2_batch,
@@ -315,12 +357,6 @@ with tf.Session() as sess:
     batches = batch_iter(list(zip(Xtrain[0], Xtrain[1], ytrain)), BATCH_SIZE, NUM_EPOCHS)
     for batch in batches:
         x1_batch, x2_batch, y_batch = zip(*batch)
-
-        # print (x1_batch)
-        # print (type(x1_batch))
-        # print (x1_batch.shape)
-        # print (x1_batch.dtype)
-        # exit(0)
 
         train(x1_batch, x2_batch, y_batch)
         current_step = tf.train.global_step(sess, global_step)
