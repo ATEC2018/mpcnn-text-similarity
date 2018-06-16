@@ -60,7 +60,7 @@ BATCH_SIZE = 64
 # 评估周期(单位step)
 EVALUATE_EVERY = 100
 # 模型存档周期
-CHECKPOINT_EVERY = 100
+CHECKPOINT_EVERY = 2000
 # 优化器学习率
 LR = 1e-3
 
@@ -243,22 +243,22 @@ with tf.Session() as sess:
     #
     loss_summary = tf.summary.scalar("loss", setence_model.loss)
     acc_summary = tf.summary.scalar("accuracy", setence_model.accuracy)
+    f1_summary = tf.summary.scalar('f1', setence_model.f1)
     #
-    train_summary_op = tf.summary.merge([loss_summary, acc_summary])
+    train_summary_op = tf.summary.merge([loss_summary, acc_summary, f1_summary])
     train_summary_dir = os.path.join(out_dir, "summaries", "train")
     train_summary_writer = tf.summary.FileWriter(train_summary_dir, sess.graph)
     #
-    dev_summary_op = tf.summary.merge([loss_summary, acc_summary])
+    dev_summary_op = tf.summary.merge([loss_summary, acc_summary, f1_summary])
     dev_summary_dir = os.path.join(out_dir, "summaries", "dev")
     dev_summary_writer = tf.summary.FileWriter(dev_summary_dir, sess.graph)
 
+    checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
+    checkpoint_prefix = os.path.join(checkpoint_dir, "model")
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+    saver = tf.train.Saver(tf.global_variables())
 
-    #
-    # checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
-    # checkpoint_prefix = os.path.join(checkpoint_dir, "model")
-    # if not os.path.exists(checkpoint_dir):
-    #     os.makedirs(checkpoint_dir)
-    # saver = tf.train.Saver(tf.global_variables(), max_to_keep=conf.num_checkpoints)
 
     def train(x1_batch, x2_batch, y_batch):
         """
@@ -286,12 +286,12 @@ with tf.Session() as sess:
             input_3: y_batch,
             dropout_keep_prob: 0.5
         }
-        _, step, summaries, batch_loss, accuracy, y_out = sess.run(
-            [train_step, global_step, train_summary_op, setence_model.loss, setence_model.accuracy,
+        _, step, summaries, batch_loss, accuracy, f1, y_out = sess.run(
+            [train_step, global_step, train_summary_op, setence_model.loss, setence_model.accuracy, setence_model.f1,
              setence_model.output],
             feed_dict)
         time_str = datetime.datetime.now().isoformat()
-        logger.info("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, batch_loss, accuracy))
+        logger.info("{}: step {}, loss {:g}, acc {:g}, f1 {:g}".format(time_str, step, batch_loss, accuracy, f1))
         # logger.info('y_out= {}'.format(y_out))
         train_summary_writer.add_summary(summaries, step)
 
@@ -306,8 +306,8 @@ with tf.Session() as sess:
             input_3: y_batch,
             dropout_keep_prob: 1
         }
-        _, step, summaries, batch_loss, accuracy = sess.run(
-            [train_step, global_step, dev_summary_op, setence_model.loss, setence_model.accuracy],
+        _, step, summaries, batch_loss, accuracy, f1 = sess.run(
+            [train_step, global_step, dev_summary_op, setence_model.loss, setence_model.accuracy, setence_model.f1],
             feed_dict)
         time_str = datetime.datetime.now().isoformat()
         dev_summary_writer.add_summary(summaries, step)
@@ -339,5 +339,8 @@ with tf.Session() as sess:
             logger.info("dev_loss {:g}, dev_acc {:g}, num_dev_batches {:g}".format(total_dev_loss, total_dev_accuracy,
                                                                                    len(ytest) / BATCH_SIZE))
             # train_summary_writer.add_summary(summaries)
+
+        if current_step % CHECKPOINT_EVERY == 0:
+            saver.save(sess, checkpoint_prefix, global_step=current_step)
 
     logger.info("Optimization Finished!")
