@@ -1,5 +1,5 @@
 # coding=utf8
-from data_helper import load_set, batch_iter
+from data_helper import batch_iter
 import embedding as emb
 from model import *
 import time
@@ -8,7 +8,7 @@ import datetime
 from tensorflow.python import debug as tf_debug
 import tensorflow as tf
 import numpy as np
-from sklearn.utils import shuffle
+# from sklearn.utils import shuffle
 import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -39,47 +39,34 @@ ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
-# tf.app.flags.DEFINE_integer('embedding_dim', 100, 'The dimension of the word embedding')
-# EMBEDDING_DIM=100
+# 词向量维数
 EMBEDDING_DIM = 128
-# tf.app.flags.DEFINE_integer('num_filters_A', 50, 'The number of filters in block A')
+# block A filter个数(model)
 NUM_FILTERS_A = 50
-# tf.app.flags.DEFINE_integer('num_filters_B', 50, 'The number of filters in block B')
+# block B filter个数(model)
 NUM_FILTER_B = 50
-# tf.app.flags.DEFINE_integer('n_hidden', 150, 'number of hidden units in the fully connected layer')
+# 全连接层中隐藏层的单元个数
 N_HIDDEN = 150
-# tf.app.flags.DEFINE_integer('sentence_length', 100, 'max size of sentence')
-# SENTENCE_LENGTH=100
-# SENTENCE_LENGTH=8
+# 句子最多包含单词数(词)
 SENTENCE_LENGTH = 40
-# 语句最多长度(包含多少个词)
-# MAX_DOCUMENT_LENGTH = 8
-# tf.app.flags.DEFINE_integer('num_classes', 6, 'num of the labels')
-# NUM_CLASSES=6
+# 结果分类个数(二分类后面会使用sigmod 进行优化)
 NUM_CLASSES = 2
-# tf.flags.DEFINE_float("l2_reg_lambda", 1, "L2 regularization lambda (default: 0.0)")
+# L2正规化系数
 L2_REG_LAMBDA = 1
-
-# tf.app.flags.DEFINE_integer('num_epochs', 85, 'Number of epochs to be trained')
+# 训练epoch个数
 NUM_EPOCHS = 8500
-# tf.app.flags.DEFINE_integer('batch_size', 64, 'size of mini batch')
+# mini batch大小
 BATCH_SIZE = 64
-
-# tf.app.flags.DEFINE_integer("display_step", 100, "Evaluate model on dev set after this many steps (default: 100)")
-DISPLAY_STEP = 100
-# tf.app.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
+# 评估周期(单位step)
 EVALUATE_EVERY = 100
-# tf.app.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
+# 模型存档周期
 CHECKPOINT_EVERY = 100
-# tf.app.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
-NUM_CHECKPOINTS = 5
-
-# tf.app.flags.DEFINE_float('lr', 1e-3, 'learning rate')
+# 优化器学习率
 LR = 1e-3
 
-# tf.app.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
+# llow device soft device placement
 ALLOW_SOFT_PLACEMENT = True
-# tf.app.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
+# Log placement of ops on devices
 LOG_DEVICE_PLACEMENT = False
 
 # 原始训练文件
@@ -96,34 +83,8 @@ WORD2VEC_MODEL = WORD2VEC_MODEL_SELF
 # 　模型格式为bin
 WORD2VEC_FORMAT = 'bin'
 
-# filter_size = [1, 2, 64]
+# 卷积filter大小
 filter_size = [1, 2, SENTENCE_LENGTH]
-# filter_size = [1, 2, 3]
-
-# glove是载入的次向量。glove.d是单词索引字典<word, index>，glove.g是词向量矩阵<词个数,300>
-# print('loading glove...')
-# glove = emb.GloVe(N=100)
-# print("Loading data...")
-# Xtrain, ytrain = load_set(glove, path='./sts/semeval-sts/all')
-#
-# for item in Xtrain:
-#     print (item)
-# print ('---old----')
-# print (type(Xtrain))
-# print (len(Xtrain))
-# print (type(Xtrain[0]))
-# print (len(Xtrain[0]))
-# print (Xtrain[0].shape)
-# print (Xtrain[0].dtype)
-#
-# exit(0)
-
-# for item in ytrain:
-#     print (item)
-# print (type(ytrain))
-# print (len(ytrain))
-# print (ytrain.shape)
-# exit(0)
 
 inpH = InputHelper()
 # 训练自己的word2vec模型
@@ -181,7 +142,7 @@ ytrain = train_set[2]
 # print (ytrain.shape)
 # exit(0)
 
-Xtrain[0], Xtrain[1], ytrain = shuffle(Xtrain[0], Xtrain[1], ytrain)
+# Xtrain[0], Xtrain[1], ytrain = shuffle(Xtrain[0], Xtrain[1], ytrain)
 
 # print ('======after shuffle======')
 # print (type(Xtrain[0]))
@@ -189,22 +150,12 @@ Xtrain[0], Xtrain[1], ytrain = shuffle(Xtrain[0], Xtrain[1], ytrain)
 # print (Xtrain[0].dtype)
 # exit(0)
 
-# [22592, 句长]
-# Xtest, ytest = load_set(glove, path='./sts/semeval-sts/2016')
 Xtest = [dev_set[0], dev_set[1]]
 ytest = dev_set[2]
-Xtest[0], Xtest[1], ytest = shuffle(Xtest[0], Xtest[1], ytest)
-# [1186, 句长]
+# Xtest[0], Xtest[1], ytest = shuffle(Xtest[0], Xtest[1], ytest)
 
 
-# max_sent_length = max([len(x) for SS in Xtrain for x in SS])
-# print max_sent_length #最大的句子长度为84
-# -------------------------------------Loading finished----------------------------------------------#
-
-# -------------------------------------training the network----------------------------------------------#
 with tf.Session() as sess:
-    # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
-    # sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
     input_1 = tf.placeholder(tf.int32, [None, SENTENCE_LENGTH], name="input_x1")
     input_2 = tf.placeholder(tf.int32, [None, SENTENCE_LENGTH], name="input_x2")
     input_3 = tf.placeholder(tf.float32, [None, NUM_CLASSES], name="input_y")
@@ -252,8 +203,6 @@ with tf.Session() as sess:
     # sess.run(siameseModel.W.assign(initW))
 
     with tf.name_scope("embendding"):
-        # s0_embed = tf.nn.embedding_lookup(glove.g, input_1)
-        # s1_embed = tf.nn.embedding_lookup(glove.g, input_2)
         s0_embed = tf.nn.embedding_lookup(initW, input_1)
         s1_embed = tf.nn.embedding_lookup(initW, input_2)
 
@@ -390,17 +339,5 @@ with tf.Session() as sess:
             logger.info("dev_loss {:g}, dev_acc {:g}, num_dev_batches {:g}".format(total_dev_loss, total_dev_accuracy,
                                                                                    len(ytest) / BATCH_SIZE))
             # train_summary_writer.add_summary(summaries)
-
-    # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
-    # for i in range(conf.num_epochs):
-    #     training_batch = zip(range(0, len(Xtrain[0]), conf.batch_size),
-    #                          range(conf.batch_size, len(Xtrain[0]) + 1, conf.batch_size))
-    #     for start, end in training_batch:
-    #         feed_dict = {input_1: Xtrain[0][start:end], input_2: Xtrain[1][start:end],
-    #                      dropout_keep_prob: 0.5, input_3: ytrain[start:end]}
-    #         print start
-    #         #assert all(x.shape == (100, 100) for x in Xtrain[0][start:end])
-    #         loss, _ = sess.run(train_step, feed_dict=feed_dict)
-    #         print("Epoch:", '%04d' % (i + 1), "cost=", "{:.9f}".format(loss))
 
     logger.info("Optimization Finished!")
