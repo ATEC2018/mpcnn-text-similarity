@@ -74,6 +74,8 @@ class InputHelper(object):
                 lable = [0] * 2
                 if flag > 0:
                     lable[1] = 1
+                else:
+                    lable[0] = 1
                 y.append(np.array(lable, dtype='float32'))
 
         # print(x1)

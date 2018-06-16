@@ -1,11 +1,13 @@
-#coding=utf8
+# coding=utf8
 import tensorflow as tf
 from utils import *
 import tensorflow.contrib.slim as slim
 
+
 def init_weight(shape, name):
     var = tf.Variable(tf.truncated_normal(shape, mean=0, stddev=1.0), name=name)
     return var
+
 
 class MPCNN_Layer():
     def __init__(self, num_classes, embedding_size, filter_sizes, num_filters, n_hidden,
@@ -20,7 +22,7 @@ class MPCNN_Layer():
         '''
         self.embedding_size = embedding_size
         self.filter_sizes = filter_sizes
-        self .num_filters = num_filters
+        self.num_filters = num_filters
         self.num_classes = num_classes
         self.poolings = [tf.reduce_max, tf.reduce_min, tf.reduce_mean]
 
@@ -41,15 +43,14 @@ class MPCNN_Layer():
                    init_weight([filter_sizes[1], embedding_size, 1, num_filters[1]], "W2_1")]
         self.b2 = [tf.Variable(tf.constant(0.1, shape=[num_filters[1], embedding_size]), "b2_0"),
                    tf.Variable(tf.constant(0.1, shape=[num_filters[1], embedding_size]), "b2_1")]
-        self.h = num_filters[0]*len(self.poolings)*2 + \
-                 num_filters[1]*(len(self.poolings)-1)*(len(filter_sizes)-1)*3 + \
-                 len(self.poolings)*len(filter_sizes)*len(filter_sizes)*3
+        self.h = num_filters[0] * len(self.poolings) * 2 + \
+                 num_filters[1] * (len(self.poolings) - 1) * (len(filter_sizes) - 1) * 3 + \
+                 len(self.poolings) * len(filter_sizes) * len(filter_sizes) * 3
         self.Wh = tf.Variable(tf.random_normal([604, n_hidden], stddev=0.01), name='Wh')
         self.bh = tf.Variable(tf.constant(0.1, shape=[n_hidden]), name="bh")
 
         self.Wo = tf.Variable(tf.random_normal([n_hidden, num_classes], stddev=0.01), name='Wo')
         self.bo = tf.Variable(tf.constant(0.1, shape=[num_classes]), name="bo")
-
 
     def attention(self):
         sent1_unstack = tf.unstack(self.input_x1, axis=1)
@@ -59,7 +60,7 @@ class MPCNN_Layer():
             d = []
             for j in range(len(sent2_unstack)):
                 dis = compute_cosine_distance(sent1_unstack[i], sent2_unstack[j])
-                #dis:[batch_size, 1(channels)]
+                # dis:[batch_size, 1(channels)]
                 d.append(dis)
             D.append(d)
             print(i)
@@ -94,13 +95,13 @@ class MPCNN_Layer():
         return pool
 
     def bulit_block_A(self, x):
-        #bulid block A and cal the similarity according to algorithm 1
+        # bulid block A and cal the similarity according to algorithm 1
         out = []
         with tf.name_scope("bulid_block_A"):
             for pooling in self.poolings:
                 pools = []
                 for i, ws in enumerate(self.filter_sizes):
-                    with tf.name_scope("conv-pool-%s" %ws):
+                    with tf.name_scope("conv-pool-%s" % ws):
                         # print ('==========x==========')
                         # print (x)
                         # exit(0)
@@ -125,7 +126,6 @@ class MPCNN_Layer():
                     out.append(pools)
             return out
 
-
     def similarity_sentence_layer(self):
         # atten = self.attention() #[batch_size, length, 2*embedding, 1]
         sent1 = self.bulit_block_A(self.input_x1)
@@ -138,7 +138,7 @@ class MPCNN_Layer():
                 for k in range(self.num_filters[0]):
                     fea_h.append(comU2(regM1[:, :, k], regM2[:, :, k]))
 
-        #self.fea_h = fea_h
+        # self.fea_h = fea_h
 
         fea_a = []
         with tf.name_scope("cal_dis_with_alg2_2-9"):
@@ -152,13 +152,12 @@ class MPCNN_Layer():
 
         fea_b = []
         with tf.name_scope("cal_dis_with_alg2_last"):
-            for i in range(len(self.poolings)-1):
-                for j in range(len(self.filter_sizes)-1):
+            for i in range(len(self.poolings) - 1):
+                for j in range(len(self.filter_sizes) - 1):
                     for k in range(self.num_filters[1]):
                         fea_b.append(comU1(sent1[i][j][:, :, k], sent2[i][j][:, :, k]))
-        #self.fea_b = fea_b
+        # self.fea_b = fea_b
         return tf.concat(fea_h + fea_a + fea_b, 1)
-
 
     def similarity_measure_layer(self, is_training=True):
         self.is_training = is_training
@@ -166,9 +165,9 @@ class MPCNN_Layer():
         self.h_drop = tf.nn.dropout(fea, self.dropout_keep_prob)
         # fea_h.extend(fea_a)
         # fea_h.extend(fea_b)
-        #print len(fea_h), fea_h
-        #fea = tf.concat(fea_h+fea_a+fea_b, 1)
-        #print fea.get_shape()
+        # print len(fea_h), fea_h
+        # fea = tf.concat(fea_h+fea_a+fea_b, 1)
+        # print fea.get_shape()
         with tf.name_scope("full_connect_layer"):
             h = tf.nn.tanh(tf.matmul(fea, self.Wh) + self.bh)
             # h = tf.nn.dropout(h, self.dropout_keep_prob)
@@ -187,6 +186,7 @@ class MPCNN_Layer():
             # self.loss = tf.reduce_mean(losses) + self.l2_reg_lambda * self.l2_loss
 
         with tf.name_scope("accuracy"):
-            self.accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(self.input_y, 1), tf.argmax(self.scores, 1)), tf.float32))
-
-
+            # self.accuracy = tf.reduce_mean(
+            #     tf.cast(tf.equal(tf.argmax(self.input_y, 1), tf.argmax(self.scores, 1)), tf.float32))
+            self.accuracy = tf.reduce_mean(
+                tf.cast(tf.equal(tf.argmax(self.input_y, 1), tf.argmax(self.output, 1)), tf.float32))
