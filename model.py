@@ -186,15 +186,15 @@ class MPCNN_Layer():
             # self.loss = tf.reduce_mean(losses) + self.l2_reg_lambda * self.l2_loss
 
         with tf.name_scope("accuracy"):
+            self.input_y_vector = tf.argmax(self.input_y, 1)
+            self.output_y_vector = tf.argmax(self.output, 1, name="temp_sim")
+
             # self.accuracy = tf.reduce_mean(
             #     tf.cast(tf.equal(tf.argmax(self.input_y, 1), tf.argmax(self.scores, 1)), tf.float32))
             self.accuracy = tf.reduce_mean(
                 tf.cast(tf.equal(tf.argmax(self.input_y, 1), tf.argmax(self.output, 1)), tf.float32))
 
         with tf.name_scope('f1'):
-            self.input_y_vector = tf.argmax(self.input_y, 1)
-            self.output_y_vector = tf.argmax(self.output, 1)
-
             ones_like_actuals = tf.ones_like(self.input_y_vector)
             zeros_like_actuals = tf.zeros_like(self.input_y_vector)
             ones_like_predictions = tf.ones_like(self.output_y_vector)

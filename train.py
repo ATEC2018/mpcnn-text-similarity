@@ -259,6 +259,9 @@ with tf.Session() as sess:
         os.makedirs(checkpoint_dir)
     saver = tf.train.Saver(tf.global_variables())
 
+    # Write vocabulary
+    vocab_processor.save(os.path.join(checkpoint_dir, "vocab"))
+
 
     def train(x1_batch, x2_batch, y_batch):
         """
