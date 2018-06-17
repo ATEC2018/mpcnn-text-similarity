@@ -34,12 +34,12 @@ x1_test, x2_test = inpH.getTestDataSet(EVAL_FILE, VOCAB_FILE, MAX_DOCUMENT_LENGT
 # for index, _ in enumerate(x1_test):
 #     print(index, x1_test[index], x2_test[index])
 
-print("\nEvaluating...\n")
+# print("\nEvaluating...\n")
 
 # Evaluation
 # ==================================================
 checkpoint_file = MODEL
-print checkpoint_file
+# print checkpoint_file
 graph = tf.Graph()
 with graph.as_default():
     session_conf = tf.ConfigProto(
@@ -48,9 +48,11 @@ with graph.as_default():
     sess = tf.Session(config=session_conf)
     with sess.as_default():
         # Load the saved meta graph and restore variables
+        print('start restore model.........')
         saver = tf.train.import_meta_graph("{}.meta".format(checkpoint_file))
         sess.run(tf.initialize_all_variables())
         saver.restore(sess, checkpoint_file)
+        print('restore model finished')
 
         # Get the placeholders from the graph by name
         input_x1 = graph.get_operation_by_name("input_x1").outputs[0]
@@ -61,12 +63,17 @@ with graph.as_default():
 
         sim = graph.get_operation_by_name("accuracy/temp_sim").outputs[0]
 
-        batches = inpH.batch_iter(list(zip(x1_test, x2_test)), 2 * BATCH_SIZE, 1, shuffle=False)
+        batches = inpH.batch_iter(list(zip(x1_test, x2_test)), BATCH_SIZE, 1, shuffle=False)
         all_d = []
 
+        print('start batch iteration............')
         for db in batches:
             x1_dev_b, x2_dev_b = zip(*db)
-            batch_sim = sess.run([sim], {input_x1: x1_dev_b, input_x2: x2_dev_b, dropout_keep_prob: 1.0})
+            batch_sim = sess.run(sim, {input_x1: x1_dev_b, input_x2: x2_dev_b, dropout_keep_prob: 1.0})
+            # print(batch_sim)
+            # print(type(batch_sim))
+            # print(len(batch_sim))
+
             all_d = np.concatenate([all_d, batch_sim])
 
         f_output = open(OUTPUT_FILE, 'a')
