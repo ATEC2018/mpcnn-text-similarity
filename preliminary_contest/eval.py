@@ -20,7 +20,7 @@ print (OUTPUT_FILE)
 # Eval Parameters
 BATCH_SIZE = 64  # 批大小
 VOCAB_FILE = './vocab/vocab'  # 训练使使用的词表
-MODEL = './models/model-34000'  # 加载训练模型
+MODEL = './models/model-20000'  # 加载训练模型
 ALLOW_SOFT_PLACEMENT = True
 LOG_DEVICE_PLACEMENT = False
 

@@ -283,11 +283,18 @@ with tf.Session() as sess:
         #     print(y)
         # exit(0)
 
+        # feed_dict = {
+        #     input_1: x1_batch,
+        #     input_2: x2_batch,
+        #     input_3: y_batch,
+        #     dropout_keep_prob: 0.5
+        # }
+
         feed_dict = {
             input_1: x1_batch,
             input_2: x2_batch,
             input_3: y_batch,
-            dropout_keep_prob: 0.5
+            dropout_keep_prob: 0.8  # drpout实际上并未生效
         }
         _, step, summaries, batch_loss, accuracy, f1, y_out = sess.run(
             [train_step, global_step, train_summary_op, setence_model.loss, setence_model.accuracy, setence_model.f1,
@@ -309,8 +316,8 @@ with tf.Session() as sess:
             input_3: y_batch,
             dropout_keep_prob: 1
         }
-        _, step, summaries, batch_loss, accuracy, f1 = sess.run(
-            [train_step, global_step, dev_summary_op, setence_model.loss, setence_model.accuracy, setence_model.f1],
+        step, summaries, batch_loss, accuracy, f1 = sess.run(
+            [global_step, dev_summary_op, setence_model.loss, setence_model.accuracy, setence_model.f1],
             feed_dict)
         time_str = datetime.datetime.now().isoformat()
         dev_summary_writer.add_summary(summaries, step)
