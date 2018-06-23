@@ -46,8 +46,17 @@ class MPCNN_Layer():
         self.h = num_filters[0] * len(self.poolings) * 2 + \
                  num_filters[1] * (len(self.poolings) - 1) * (len(filter_sizes) - 1) * 3 + \
                  len(self.poolings) * len(filter_sizes) * len(filter_sizes) * 3
-        self.Wh = tf.Variable(tf.random_normal([604, n_hidden], stddev=0.01), name='Wh')
-        self.bh = tf.Variable(tf.constant(0.1, shape=[n_hidden]), name="bh")
+
+        self.Wh1 = tf.Variable(tf.random_normal([604, n_hidden], stddev=0.01), name='Wh1')
+        self.bh1 = tf.Variable(tf.constant(0.1, shape=[n_hidden]), name="bh1")
+
+        n_hidden2 = n_hidden
+        self.Wh2 = tf.Variable(tf.random_normal([n_hidden, n_hidden2], stddev=0.01), name='Wh2')
+        self.bh2 = tf.Variable(tf.constant(0.1, shape=[n_hidden2]), name="bh2")
+
+        n_hidden3 = n_hidden
+        self.Wh3 = tf.Variable(tf.random_normal([n_hidden2, n_hidden3], stddev=0.01), name='Wh3')
+        self.bh3 = tf.Variable(tf.constant(0.1, shape=[n_hidden3]), name="bh3")
 
         self.Wo = tf.Variable(tf.random_normal([n_hidden, num_classes], stddev=0.01), name='Wo')
         self.bo = tf.Variable(tf.constant(0.1, shape=[num_classes]), name="bo")
@@ -162,18 +171,22 @@ class MPCNN_Layer():
     def similarity_measure_layer(self, is_training=True):
         self.is_training = is_training
         fea = self.similarity_sentence_layer()
-        self.h_drop = tf.nn.dropout(fea, self.dropout_keep_prob)
-        # fea_h.extend(fea_a)
-        # fea_h.extend(fea_b)
-        # print len(fea_h), fea_h
-        # fea = tf.concat(fea_h+fea_a+fea_b, 1)
-        # print fea.get_shape()
+        # fea = tf.nn.dropout(fea, self.dropout_keep_prob)
+
         with tf.name_scope("full_connect_layer"):
-            h = tf.nn.tanh(tf.matmul(fea, self.Wh) + self.bh)
-            # h = tf.nn.dropout(h, self.dropout_keep_prob)
-            self.scores = tf.matmul(h, self.Wo) + self.bo
+            h1 = tf.nn.tanh(tf.matmul(fea, self.Wh1) + self.bh1)
+            h1 = tf.nn.dropout(h1, self.dropout_keep_prob)
+
+            # h2 = tf.nn.tanh(tf.matmul(h1, self.Wh2) + self.bh2)
+            # h2 = tf.nn.dropout(h2, self.dropout_keep_prob)
+            #
+            # h3 = tf.nn.tanh(tf.matmul(h2, self.Wh3) + self.bh3)
+            # h3 = tf.nn.dropout(h3, self.dropout_keep_prob)
+
+            h3 = h1
+
+            self.scores = tf.matmul(h3, self.Wo) + self.bo
             self.output = tf.nn.softmax(self.scores)
-        #     return o
 
         # CalculateMean cross-entropy loss
         reg = tf.contrib.layers.apply_regularization(tf.contrib.layers.l2_regularizer(1e-4), tf.trainable_variables())

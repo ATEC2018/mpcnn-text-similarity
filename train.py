@@ -86,6 +86,9 @@ WORD2VEC_FORMAT = 'bin'
 # 卷积filter大小
 filter_size = [1, 2, SENTENCE_LENGTH]
 
+# 全连接层Dropout
+FULL_CONNECT_LAYER_DROPOUT = 0.8
+
 inpH = InputHelper()
 # 训练自己的word2vec模型
 # inpH.gen_word2vec(TRAINING_FILES_RAW, WORD2VEC_MODEL_SELF, EMBEDDING_DIM)
@@ -294,14 +297,15 @@ with tf.Session() as sess:
             input_1: x1_batch,
             input_2: x2_batch,
             input_3: y_batch,
-            dropout_keep_prob: 0.8  # drpout实际上并未生效
+            dropout_keep_prob: FULL_CONNECT_LAYER_DROPOUT
         }
         _, step, summaries, batch_loss, accuracy, f1, y_out = sess.run(
             [train_step, global_step, train_summary_op, setence_model.loss, setence_model.accuracy, setence_model.f1,
              setence_model.output],
             feed_dict)
         time_str = datetime.datetime.now().isoformat()
-        logger.info("{}: step {}, loss {:g}, acc {:g}, f1 {:g}".format(time_str, step, batch_loss, accuracy, f1))
+        logger.info(
+            "{}: step {}, loss {:g}, acc {:g}, f1 {:g}".format(time_str, step, batch_loss, accuracy, f1))
         # logger.info('y_out= {}'.format(y_out))
         train_summary_writer.add_summary(summaries, step)
 

@@ -58,6 +58,7 @@ class InputHelper(object):
         x1 = []
         x2 = []
         y = []
+        num_p = 0
         # positive samples from file
         for line in open(filepath):
             # print(line)
@@ -74,13 +75,35 @@ class InputHelper(object):
                 lable = [0] * 2
                 if flag > 0:
                     lable[1] = 1
+                    num_p += 1
                 else:
                     lable[0] = 1
                 y.append(np.array(lable, dtype='float32'))
 
-        # print(x1)
-        # print(x2)
-        # print(y)
+        # 欠采样处理
+        tmp_x1 = []
+        tmp_x2 = []
+        tmp_y = []
+
+        for idx, item in enumerate(y):
+            if item[1] == 1:
+                tmp_x1.append(x1[idx])
+                tmp_x2.append(x2[idx])
+                tmp_y.append(y[idx])
+            elif num_p >= 0:
+                tmp_x1.append(x1[idx])
+                tmp_x2.append(x2[idx])
+                tmp_y.append(y[idx])
+                num_p -= 1
+
+        x1 = tmp_x1
+        x2 = tmp_x2
+        y = tmp_y
+
+        # print ('num_p= {}'.format(num_p))
+        # print('num_n= {}'.format(num_n))
+        # exit(0)
+
         return np.asarray(x1), np.asarray(x2), np.asarray(y)
 
     def getTsvTestData(self, filepath):
@@ -162,6 +185,11 @@ class InputHelper(object):
         y_shuffled = y[shuffle_indices]
         dev_idx = -1 * len(y_shuffled) * percent_dev // 100
         print('dev_idx= {}'.format(dev_idx))
+
+        # for idx, item in enumerate(y_shuffled):
+        #     print('idx={}\n x1_shuffled={}\n x2_shuffled={}\n y_shuffled={}'.format(idx, x1_shuffled[idx], x2_shuffled[idx], y_shuffled[idx]))
+        #
+        # exit(0)
 
         del x1
         del x2
