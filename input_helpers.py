@@ -59,6 +59,7 @@ class InputHelper(object):
         x2 = []
         y = []
         num_p = 0
+        num_n=0
         # positive samples from file
         for line in open(filepath):
             # print(line)
@@ -78,27 +79,57 @@ class InputHelper(object):
                     num_p += 1
                 else:
                     lable[0] = 1
+                    num_n+=1
                 y.append(np.array(lable, dtype='float32'))
 
-        # 欠采样处理
+
         tmp_x1 = []
         tmp_x2 = []
         tmp_y = []
 
-        for idx, item in enumerate(y):
-            if item[1] == 1:
-                tmp_x1.append(x1[idx])
-                tmp_x2.append(x2[idx])
-                tmp_y.append(y[idx])
-            elif num_p >= 0:
-                tmp_x1.append(x1[idx])
-                tmp_x2.append(x2[idx])
-                tmp_y.append(y[idx])
-                num_p -= 1
+        # # 欠采样处理
+        # for idx, item in enumerate(y):
+        #     if item[1] == 1:
+        #         tmp_x1.append(x1[idx])
+        #         tmp_x2.append(x2[idx])
+        #         tmp_y.append(y[idx])
+        #     elif num_p >= 0:
+        #         tmp_x1.append(x1[idx])
+        #         tmp_x2.append(x2[idx])
+        #         tmp_y.append(y[idx])
+        #         num_p -= 1
+        # x1 = tmp_x1
+        # x2 = tmp_x2
+        # y = tmp_y
 
-        x1 = tmp_x1
-        x2 = tmp_x2
-        y = tmp_y
+        # 过采样处理
+        add_p_num=num_n-num_p
+        while add_p_num>0:
+            for idx, item in enumerate(y):
+                if item[1]==1:
+                    tmp_x1.append(x1[idx])
+                    tmp_x2.append(x2[idx])
+                    tmp_y.append(y[idx])
+                    add_p_num-=1
+                    if add_p_num<=0:
+                        break
+
+        print('len(x1)={}, len(x2)={}, len(y)={}'.format(len(x1), len(x2), len(y)))
+
+        x1+=tmp_x1
+        x2+=tmp_x2
+        y+=tmp_y
+
+        print('len(x1)={}, len(x2)={}, len(y)={}'.format(len(x1), len(x2), len(y)))
+
+        # num_p=0
+        # for item in y:
+        #     if item[1]==1:
+        #         num_p+=1
+        #
+        # print('num_p= {}'.format(num_p))
+        # exit(0)
+
 
         # print ('num_p= {}'.format(num_p))
         # print('num_n= {}'.format(num_n))
